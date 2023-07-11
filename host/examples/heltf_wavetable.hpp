@@ -102,6 +102,7 @@ public:
     {
         if (++cur == wave_table_len) cur = 0;
         return _wave_table[cur];
+        // return 0;
     }
 
 private:
