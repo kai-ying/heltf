@@ -106,6 +106,8 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     double settling_time,
     std::vector<size_t> rx_channel_nums)
 {
+    
+
     int num_total_samps = 0;
     // create a receive streamer
     uhd::stream_args_t stream_args(cpu_format, wire_format);
@@ -174,25 +176,11 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
                 str(boost::format("Receiver error %s") % md.strerror()));
         }
 
-        // num_rx_samps /= 10;
-        // num_total_samps += num_rx_samps;
-
-        // const size_t fs = 10;
-        // for (size_t i = 0, t = 0; i < outfiles.size(); i++, t++) {
-        //     std::cout << t;
-        //     if ((t % wave_table_len) == (wave_table_len - 1)) {
-        //         std::cout << t << std::endl;
-        //         t += wave_table_len * (fs - 1) + 1;
-        //     }
-        //     outfiles[i]->write(
-        //         (const char*)buff_ptrs[t], num_rx_samps * sizeof(samp_type));
-        // }
-
         num_total_samps += num_rx_samps;
 
         for (size_t i = 0; i < outfiles.size(); i++) {
             outfiles[i]->write(
-                (const char*)buff_ptrs[i], num_rx_samps / 1000 * sizeof(samp_type)); // / 100 
+                (const char*)buff_ptrs[i], num_rx_samps / 100 * sizeof(samp_type)); // / 100 
 
         }
 

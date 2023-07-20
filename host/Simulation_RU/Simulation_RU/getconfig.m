@@ -1,8 +1,8 @@
 function cfg=getconfig()
 
-cfg.fc=5.825e9; %carrier frequency
-cfg.users=4;    %number of users
-cfg.ltfmode=1;  %HE-LTF mode : 1- x1; 2- x2; 3- x4;
+cfg.fc=5e9; %carrier frequency
+cfg.users=2;    %number of users
+cfg.ltfmode=2;  %HE-LTF mode : 1- x1; 2- x2; 3- x4;
 cfg.user_offset=[0 -1 -2 1]; %user subcarrier offset, for 20M x4 should be -2,-1,0,1 other x4 should be 0,1,2,3
 cfg.user_phase=[0 pi/2 pi -pi/2];
 %cfg.user_phase=[0 0 0 0];

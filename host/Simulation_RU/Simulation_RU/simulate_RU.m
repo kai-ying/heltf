@@ -66,7 +66,7 @@ end
 
 %%  --decode part
 figure
-cfr_all=fftshift(fft(recv_bb(cfg.gilen+1:end)));
+
 plot(abs(cfr_all))
 legend('receive')
 % hold on
