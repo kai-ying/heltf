@@ -192,7 +192,7 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
 
         for (size_t i = 0; i < outfiles.size(); i++) {
             outfiles[i]->write(
-                (const char*)buff_ptrs[i], num_rx_samps / 100 * sizeof(samp_type)); // / 100 
+                (const char*)buff_ptrs[i], num_rx_samps / 1000 * sizeof(samp_type)); // / 100 
 
         }
 
