@@ -1,5 +1,6 @@
 {
     "files.associations": {
+<<<<<<< HEAD
         "complex": "cpp",
         "cctype": "cpp",
         "clocale": "cpp",
@@ -65,5 +66,8 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp"
+=======
+        "complex": "cpp"
+>>>>>>> 5adebe0e4cb4f94d1fca93d1b0d733f633633f5c
     }
 }
