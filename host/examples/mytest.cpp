@@ -106,7 +106,7 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     double settling_time,
     std::vector<size_t> rx_channel_nums)
 {
-    
+
 
     int num_total_samps = 0;
     // create a receive streamer
@@ -123,6 +123,11 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     for (size_t i = 0; i < buffs.size(); i++) {
         buff_ptrs.push_back(&buffs[i].front());
     }
+
+
+
+
+
 
     // Create one ofstream object per channel
     // (use shared_ptr because ofstream is non-copyable)
