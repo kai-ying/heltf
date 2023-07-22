@@ -53,7 +53,7 @@ std::string generate_out_filename(
     return base_fn_fp.string();
 }
 
-
+std::vector<std::complex<float>> tx_bb[2304];
 /***********************************************************************
  * transmit_worker function
  * A function to be used as a boost::thread_group thread for transmitting
@@ -75,6 +75,7 @@ void transmit_worker(std::vector<std::complex<float>> buff,
             // index = (index + step) % wave_table_len;
             // buff[n] = wave_table(index);
             buff[n] = wave_table();
+            // tx_bb[n] = buff[n];
             // std::cout << buff[n] << std::endl;
             // std::cout << index << std:: endl;
         }
@@ -130,11 +131,6 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     for (size_t i = 0; i < buffs.size(); i++) {
         buff_ptrs.push_back(&buffs[i].front());
         std::cout << buffs.size() << std::endl;
-        // for (int j = 0; j < 2048; j++) {
-        //     std::cout << &buffs[j].front() << std::endl; 
-        // }
-
-
     }
 
     // Create one ofstream object per channel
@@ -182,8 +178,7 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
                            "Got an overflow indication. Please consider the following:\n"
                            "  Your write medium must sustain a rate of %fMB/s.\n"
                            "  Dropped samples will not be written to the file.\n"
-                           "  Please modify this example for your purposes.\n"
-                           "  This message will not appear again.\n")
+                           "  Please modify this examp0722pear again.\n")
                            % (usrp->get_rx_rate() * sizeof(samp_type) / 1e6);
             }
             continue;
@@ -199,15 +194,15 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
             outfiles[i]->write(
                 (const char*)buff_ptrs[i], num_rx_samps * sizeof(samp_type)); // / 100 
         }
-        // //recv complex float signal
+        //recv complex float signal
         // for (size_t i = 0; i < outfiles.size(); i++) {
-        //     std::cout << outfiles.size() << std::endl;
-        //     std::cout << sizeof(samp_type) << std::endl; 
-  
-        //     for (int t = 0; t < 2304; t++) {
-                
-        //         std::cout << buff_ptrs[i][t] << std::endl;
-        //     }
+        //     // std::cout << outfiles.size() << std::endl;
+        //     // std::cout << sizeof(samp_type) << std::endl; 
+
+        //     // for (int t = 0; t < 2304; t++) {
+        
+        //     //     std::cout << buff_ptrs[i][t] << std::endl;
+        //     // }
         // }
 
     }
