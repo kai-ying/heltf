@@ -78,7 +78,6 @@ void transmit_worker(std::vector<std::complex<float>> buff,
             // std::cout << buff[n] << std::endl;
             // std::cout << index << std:: endl;
         }
-        // std::cout << buff.size() << std::endl;
 
         // send the entire contents of the buffer
         tx_streamer->send(buffs, buff.size(), metadata);
@@ -86,6 +85,14 @@ void transmit_worker(std::vector<std::complex<float>> buff,
         metadata.start_of_burst = false;
         metadata.has_time_spec  = false;
     }
+
+    // // //send bb signal
+    // for (size_t n = 0; n < 2304; n++) {
+    //     // std::cout << buff.size() << std::endl;
+    //     std::cout << buff[n] << std::endl;
+
+    // }
+
 
     // send a mini EOB packet
     metadata.end_of_burst = true;
@@ -122,12 +129,13 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     std::vector<samp_type*> buff_ptrs;
     for (size_t i = 0; i < buffs.size(); i++) {
         buff_ptrs.push_back(&buffs[i].front());
+        std::cout << buffs.size() << std::endl;
+        // for (int j = 0; j < 2048; j++) {
+        //     std::cout << &buffs[j].front() << std::endl; 
+        // }
+
+
     }
-
-
-
-
-
 
     // Create one ofstream object per channel
     // (use shared_ptr because ofstream is non-copyable)
@@ -137,6 +145,10 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
         outfiles.push_back(boost::shared_ptr<std::ofstream>(
             new std::ofstream(this_filename.c_str(), std::ofstream::binary)));
     }
+
+
+
+
     UHD_ASSERT_THROW(outfiles.size() == buffs.size());
     UHD_ASSERT_THROW(buffs.size() == rx_channel_nums.size());
     bool overflow_message = true;
@@ -185,9 +197,18 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
 
         for (size_t i = 0; i < outfiles.size(); i++) {
             outfiles[i]->write(
-                (const char*)buff_ptrs[i], num_rx_samps / 100 * sizeof(samp_type)); // / 100 
-
+                (const char*)buff_ptrs[i], num_rx_samps * sizeof(samp_type)); // / 100 
         }
+        // //recv complex float signal
+        // for (size_t i = 0; i < outfiles.size(); i++) {
+        //     std::cout << outfiles.size() << std::endl;
+        //     std::cout << sizeof(samp_type) << std::endl; 
+  
+        //     for (int t = 0; t < 2304; t++) {
+                
+        //         std::cout << buff_ptrs[i][t] << std::endl;
+        //     }
+        // }
 
     }
 
@@ -195,10 +216,12 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
     rx_stream->issue_stream_cmd(stream_cmd);
 
+
     // Close files
     for (size_t i = 0; i < outfiles.size(); i++) {
         outfiles[i]->close();
     }
+
 }
 
 
