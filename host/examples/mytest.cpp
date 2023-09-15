@@ -53,7 +53,8 @@ std::string generate_out_filename(
     return base_fn_fp.string();
 }
 
-std::vector<std::complex<float>> tx_bb[2304];
+std::vector<std::complex<float>> tx_bb;
+
 /***********************************************************************
  * transmit_worker function
  * A function to be used as a boost::thread_group thread for transmitting
@@ -75,10 +76,10 @@ void transmit_worker(std::vector<std::complex<float>> buff,
             // index = (index + step) % wave_table_len;
             // buff[n] = wave_table(index);
             buff[n] = wave_table();
-            // tx_bb[n] = buff[n];
+            // if (tx_bb.size() < 2304) tx_bb.push_back(buff[n]);
             // std::cout << buff[n] << std::endl;
             // std::cout << index << std:: endl;
-        }
+        }        
 
         // send the entire contents of the buffer
         tx_streamer->send(buffs, buff.size(), metadata);
@@ -91,7 +92,9 @@ void transmit_worker(std::vector<std::complex<float>> buff,
     // for (size_t n = 0; n < 2304; n++) {
     //     // std::cout << buff.size() << std::endl;
     //     std::cout << buff[n] << std::endl;
-
+    // }
+    // for (size_t j = 0; j < 2304; j++) {
+    //     std::cout << tx_bb[j] << std::endl;
     // }
 
 
@@ -115,6 +118,7 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     std::vector<size_t> rx_channel_nums)
 {
 
+    std::vector<samp_type> rx_data;
 
     int num_total_samps = 0;
     // create a receive streamer
@@ -130,7 +134,7 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
     std::vector<samp_type*> buff_ptrs;
     for (size_t i = 0; i < buffs.size(); i++) {
         buff_ptrs.push_back(&buffs[i].front());
-        std::cout << buffs.size() << std::endl;
+
     }
 
     // Create one ofstream object per channel
@@ -141,8 +145,6 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
         outfiles.push_back(boost::shared_ptr<std::ofstream>(
             new std::ofstream(this_filename.c_str(), std::ofstream::binary)));
     }
-
-
 
 
     UHD_ASSERT_THROW(outfiles.size() == buffs.size());
@@ -187,25 +189,28 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
             throw std::runtime_error(
                 str(boost::format("Receiver error %s") % md.strerror()));
         }
-
         num_total_samps += num_rx_samps;
-
+        // 不降采样 /50
         for (size_t i = 0; i < outfiles.size(); i++) {
             outfiles[i]->write(
-                (const char*)buff_ptrs[i], num_rx_samps * sizeof(samp_type)); // / 100 
+                (const char*)buff_ptrs[i], num_rx_samps  * sizeof(samp_type)); // / 100 
         }
-        //recv complex float signal
-        // for (size_t i = 0; i < outfiles.size(); i++) {
-        //     // std::cout << outfiles.size() << std::endl;
-        //     // std::cout << sizeof(samp_type) << std::endl; 
-
-        //     // for (int t = 0; t < 2304; t++) {
-        
-        //     //     std::cout << buff_ptrs[i][t] << std::endl;
-        //     // }
-        // }
 
     }
+    
+    //recv complex float signal
+    for (size_t i = 0; i < outfiles.size(); i++) {
+        // std::cout << outfiles.size() << std::endl;
+        // std::cout << sizeof(samp_type) << std::endl; 
+
+        for (int t = 0; t < 2304; t++) {
+            rx_data.push_back(buff_ptrs[i][t]);
+            std::cout << rx_data[t] << std::endl;
+            // std::cout << rx_data.size() << std::endl;
+            // std::cout << buff_ptrs[i][t] << std::endl;
+        }
+    }
+
 
     // Shut down receiver
     stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
