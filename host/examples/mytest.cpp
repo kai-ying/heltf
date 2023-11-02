@@ -73,6 +73,7 @@ void transmit_worker(std::vector<std::complex<float>> buff,
     while (not stop_signal_called) {
         // fill the buffer with the waveform
         for (size_t n = 0; n < buff.size(); n++) {
+
             // index = (index + step) % wave_table_len;
             // buff[n] = wave_table(index);
             buff[n] = wave_table();
@@ -193,7 +194,7 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
         // 不降采样 /50
         for (size_t i = 0; i < outfiles.size(); i++) {
             outfiles[i]->write(
-                (const char*)buff_ptrs[i], num_rx_samps  * sizeof(samp_type)); // / 100 
+                (const char*)buff_ptrs[i], num_rx_samps  * sizeof(samp_type) / 100); // / 100 
         }
 
     }

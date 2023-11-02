@@ -1,8 +1,8 @@
 function cfg=getconfig()
 
-cfg.fc=5.825e9; %carrier frequency
+cfg.fc=5.815e9; %carrier frequency
 cfg.users=2;    %number of users
-cfg.ltfmode=2;  %HE-LTF mode : 1- x1; 2- x2; 3- x4;
+cfg.ltfmode=1;  %HE-LTF mode : 1- x4; 2- x2; 3- x1;
 cfg.user_offset=[0 -1 -2 1]; %user subcarrier offset, for 20M x4 should be -2,-1,0,1 other x4 should be 0,1,2,3
 cfg.user_phase=[0 pi/2 pi -pi/2];
 %cfg.user_phase=[0 0 0 0];
@@ -15,7 +15,8 @@ cfg.bw=realbw(cfg.bandwidth);
 fftlenmul=[1 2 4 8];
 cfg.fftlen=fftlength(cfg.ltfmode)*fftlenmul(cfg.bandwidth);
 cfg.gitype=2;    %GI length: 1-0.8us; 2 1.6us; 3-3.2us
-gilength=[16 32 64];
+% gilength=[16 32 64];
+gilength=[0 0 0];
 cfg.gilen=gilength(cfg.gitype)*fftlenmul(cfg.bandwidth);
 cfg.symbollen=cfg.gilen+cfg.fftlen;
 cfg.userltf=zeros(cfg.users,cfg.fftlen);
