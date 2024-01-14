@@ -27,7 +27,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <atomic>
+
 
 
 
@@ -36,9 +36,6 @@ namespace po = boost::program_options;
 // size_t index = 0;
 boost::mutex indexMutex; // 声明一个互斥量
 
-boost::condition_variable tranmitCP_condition;
-boost::mutex cv_m;
-std::atomic<bool> restart_transmit(false);
 
 /***********************************************************************
  * Signal handlers
@@ -131,24 +128,16 @@ void server_work(size_t &index) {
             std::cout << "Synchronization has done!" << std::endl;
             //////////////////////////////////////////////////////////////
             // LKY DO IT: receive change CP message
-            char CP_flag[2]; // 设置接收缓冲区
-            memset(CP_flag, 0, sizeof(CP_flag)); // 初始化缓冲区
-            if (recv(clientSocket, CP_flag, sizeof(CP_flag), 0) == -1) {
+            char CP_buffer[2]; // 设置接收缓冲区
+            memset(CP_buffer, 0, sizeof(CP_buffer)); // 初始化缓冲区
+            if (recv(clientSocket, CP_buffer, sizeof(CP_buffer), 0) == -1) {
                 std::cerr << "Error: Receiving data failed\n";
                 close(clientSocket);
                 // return 1;
             }
-            if (strcmp(CP_flag, "CP") == 0) {
+            if (strcmp(CP_buffer, "CP") == 0) {
                 // TO DO IT: change to CP data
                 std::cout << "Need to change to data with CP Now!" << std::endl;
-                {
-                    // 上锁
-                    boost::lock_guard<boost::mutex> lock(cv_m);
-                    // 重置重启标志位
-                    restart_transmit.store(true);
-                }
-                // 条件变量提醒线程
-                tranmitCP_condition.notify_one();
             }
 
             boost::this_thread::sleep(boost::posix_time::seconds(100));
@@ -171,59 +160,6 @@ void server_work(size_t &index) {
 }
 
 /***********************************************************************
- * transmitCP_worker function
- * A function to be used as a boost::thread_group thread for transmitting
- **********************************************************************/
-void transmitCP_worker(std::vector<std::complex<float>> CPbuff,
-    CPwave_table_class CPwave_table,
-    uhd::tx_streamer::sptr tx_streamer,
-    uhd::tx_metadata_t metadata,
-    size_t step,
-    size_t &index,
-    size_t cnt,
-    int num_channels)
-{
-    std::vector<std::complex<float>*> CPbuffs(num_channels, &CPbuff.front());
-    {
-        boost::unique_lock<boost::mutex> lock(cv_m);
-        // 等待条件变量通知
-        tranmitCP_condition.wait(lock);
-        std::cout << "transmitCP_worker start!!" << std:: endl;
-    }
-    boost::this_thread::sleep(boost::posix_time::microseconds(150));
-    // send data until the signal handler gets called
-    while (not stop_signal_called && restart_transmit) {
-        if (++cnt == 12) {
-            cnt = 0;
-            index--;
-        }
-        // fill the buffer with the waveform
-        for (size_t n = 0; n < CPbuff.size(); n++) {
-            // buff[n] = wave_table();
-            // if (not restart_transmit) {
-            //     if (index % 2048 == 0) index += 256;
-            // }
-            CPbuff[n] = CPwave_table(index += step);
-            // std::cout << buff[n] << std::endl;
-            // std::cout << index << std:: endl;
-        }
-        // std::cout << buff.size() << std::endl;
-
-        // send the entire contents of the buffer
-        tx_streamer->send(CPbuffs, CPbuff.size(), metadata);
-
-        metadata.start_of_burst = false;
-        metadata.has_time_spec  = false;
-    }
-    std::cout << std::endl << "transmitCP_worker finished!!!" << std::endl << std::endl;
-
-    // send a mini EOB packet
-    metadata.end_of_burst = true;
-    tx_streamer->send("", 0, metadata);
-}
-
-
-/***********************************************************************
  * transmit_worker function
  * A function to be used as a boost::thread_group thread for transmitting
  **********************************************************************/
@@ -237,37 +173,28 @@ void transmit_worker(std::vector<std::complex<float>> buff,
     int num_channels)
 {
     std::vector<std::complex<float>*> buffs(num_channels, &buff.front());
-    
-    // if (not restart_transmit) {
-    //     // std::cout << std::endl << "Now transmit_worker!!!" << std::endl << std::endl;
-    
-    // } else { // restart transmmit_thread
-    //     transmit_thread.interrupt_all(); //中断之前的发送线程
-    //     transmit_thread.join_all();  // 等待线程结束
-    //     boost::thread_group transmit_thread;
-    //     transmit_thread.create_thread(boost::bind(
-    //         &transmitCP_worker, buff, CPwave_table, tx_stream, md, step, boost::ref(index), cnt, num_channels));
-    //     restart_transmit = false;
-    //     std::cout << std::endl << "Have Changed to transmitCP_worker!!!" << std::endl << std::endl;
-    // }
+
+    // // LKY ADD IT
+    // // Create a boost::thread_group
+    // boost::thread_group server_Group;
+    // // Start the thread
+    // server_Group.create_thread(boost::bind(&server_work, index));
 
 
     // send data until the signal handler gets called
-    while (not stop_signal_called && not restart_transmit) {
+    while (not stop_signal_called) {
         // Tx_wavefrom index
         // std::cout << "TX_wavefrom index" << index <<std::endl;
         // boost::lock_guard<boost::mutex> lock(indexMutex); // 在访问 index 之前加锁
-        if (++cnt == 12) {
+        if (++cnt == 60) {
             cnt = 0;
-            index--;
+            index++;
         }
         // fill the buffer with the waveform
         for (size_t n = 0; n < buff.size(); n++) {
             // buff[n] = wave_table();
-            // if (not restart_transmit) {
-            //     if (index % 2048 == 0) index += 256;
-            // }
             buff[n] = wave_table(index += step);
+            // if (index == 2048) index = 0;
             // std::cout << buff[n] << std::endl;
             // std::cout << index << std:: endl;
         }
@@ -281,18 +208,8 @@ void transmit_worker(std::vector<std::complex<float>> buff,
     }
 
     // send a mini EOB packet
-    // metadata.end_of_burst = true;
-    // tx_streamer->send("", 0, metadata);
-    std::cout << std::endl << "transmit_worker finished!!!" << std::endl << std::endl;
-    // boost::this_thread::sleep(boost::posix_time::seconds(200));
-    // // transmit_thread.interrupt_all(); //中断之前的发送线程
-    // transmit_thread.join_all();  // 等待线程结束
-    // boost::thread_group transmit_thread;
-    // transmit_thread.create_thread(boost::bind(
-    //     &transmitCP_worker, buff, CPwave_table, tx_stream, md, step, boost::ref(index), cnt, num_channels));
-    // restart_transmit = false;
-    // std::cout << std::endl << "Have Changed to transmitCP_worker!!!" << std::endl << std::endl;
-    
+    metadata.end_of_burst = true;
+    tx_streamer->send("", 0, metadata);
 }
 
 
@@ -407,7 +324,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
 
     // receive variables to be set by po
     std::string rx_args, file, type, rx_ant, rx_subdev, rx_channels;
-    size_t total_num_samps, spb, CPspb;
+    size_t total_num_samps, spb;
     double rx_rate, rx_freq, rx_gain, rx_bw;
     double settling;
 
@@ -423,8 +340,6 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         ("nsamps", po::value<size_t>(&total_num_samps)->default_value(0), "total number of samples to receive")
         ("settling", po::value<double>(&settling)->default_value(double(0.2)), "settling time (seconds) before receiving")
         ("spb", po::value<size_t>(&spb)->default_value(0), "samples per buffer, 0 for default")
-        ("CPspb", po::value<size_t>(&CPspb)->default_value(0), "samples per buffer, 0 for default")
-
         ("tx-rate", po::value<double>(&tx_rate), "rate of transmit outgoing samples")
         ("rx-rate", po::value<double>(&rx_rate), "rate of receive incoming samples")
         ("tx-freq", po::value<double>(&tx_freq), "transmit RF center frequency in Hz")
@@ -653,8 +568,6 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     const size_t step = 1;
         // boost::math::iround(wave_freq / tx_usrp->get_tx_rate() * wave_table_len);
    
-    // pre-compute the CPwaveform values
-    const CPwave_table_class CPwave_table(wave_type, ampl);
 
     size_t index = 0;
     size_t cnt = 0;
@@ -670,19 +583,11 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     if (spb == 0){
         spb = tx_stream->get_max_num_samps() * 10;
     }
-    if (CPspb == 0){
-        CPspb = tx_stream->get_max_num_samps() * 10;
-    }
-    std::cout << "spb: " << spb << std::endl;
-    std::cout << "CPspb: " << CPspb << std::endl;
+    std::cout << spb << std::endl;
     std::cout << tx_stream->get_max_num_samps() << std::endl;  
 
     std::vector<std::complex<float>> buff(spb);
     int num_channels = tx_channel_nums.size();
-
-    // LKY DO IT!
-    std::vector<std::complex<float>> CPbuff(CPspb);
-
 
     // setup the metadata flags
     uhd::tx_metadata_t md;
@@ -759,10 +664,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     boost::thread_group transmit_thread;
     transmit_thread.create_thread(boost::bind(
         &transmit_worker, buff, wave_table, tx_stream, md, step, boost::ref(index), cnt, num_channels));
-    
-    // LKY DO！
-    transmit_thread.create_thread(boost::bind(
-        &transmitCP_worker, CPbuff, CPwave_table, tx_stream, md, step, boost::ref(index), cnt, num_channels));
+
 
     // Create a boost::thread_group
     boost::thread_group server_Group;
@@ -787,9 +689,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     //     throw std::runtime_error("Unknown type " + type);
     // }
     if (type == "float") {
-        while (not stop_signal_called) {
-
-        };
+        while (not stop_signal_called) {};
     }
 
     // clean up transmit worker

@@ -29,6 +29,8 @@ set(example_sources
     gpio.cpp
     sync_to_gps.cpp
     mytest.cpp
+    TxNoCPTest.cpp
+    Tx_full_sub.cpp
 )
 
 if(ENABLE_RFNOC)
