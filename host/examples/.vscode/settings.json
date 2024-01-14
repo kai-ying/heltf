@@ -1,5 +1,7 @@
 {
     "files.associations": {
+<<<<<<< HEAD
+        "complex": "cpp",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
@@ -20,7 +22,6 @@
         "bitset": "cpp",
         "chrono": "cpp",
         "codecvt": "cpp",
-        "complex": "cpp",
         "condition_variable": "cpp",
         "cstdint": "cpp",
         "deque": "cpp",
@@ -64,7 +65,9 @@
         "cinttypes": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
-        "variant": "cpp",
-        "*.ipp": "cpp"
+        "variant": "cpp"
+=======
+        "complex": "cpp"
+>>>>>>> 5adebe0e4cb4f94d1fca93d1b0d733f633633f5c
     }
 }

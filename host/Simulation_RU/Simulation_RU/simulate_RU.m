@@ -1,5 +1,5 @@
 %%  ------ set simulation parameters
-cfg = getconfig();
+ cfg = getconfig();
 
 %%  ------ Baseband part
 bb=zeros(cfg.users,cfg.symbollen);
@@ -7,14 +7,31 @@ bb=zeros(cfg.users,cfg.symbollen);
 %get the sending he-ltf baseband for each user
 for u=1:cfg.users
     [bb(u,:),cfg.userltf(u,:)]=getheltf(cfg,u);
-    plot(real(bb(u,:)));
-    hold on
+%     bb(u,1:10) = 0;
+%     bb(u,end-10:end) = 0;
+%     plot(real(bb(u,:)));
+%     hold on
 end
+% 全部子载波
+transmit_bb = bb(1,:)./ max(imag(bb(1,:)));
+figure()
+plot(real(transmit_bb))
+hold on
+plot(imag(transmit_bb))
+hold on
+% 分布式子载波
+% transmit_bb = sum(bb(:,:));
 
-imag_bb = imag(bb);
-real_bb = real(bb);
-writematrix(real_bb(1,:), 'real_bb.txt')
-writematrix(imag_bb(1,:), 'imag_bb.txt')
+figure
+cfr_bb=fftshift(fft(transmit_bb(cfg.gilen+1:end)));
+plot(abs(cfr_bb))
+hold on
+
+
+imag_bb = imag(transmit_bb);
+real_bb = real(transmit_bb);
+writematrix(real_bb, 'real_bb.txt')
+writematrix(imag_bb, 'imag_bb.txt')
 
 
 %%  ------ Simple baseband channel model, will consider real up/down conversion later
@@ -43,20 +60,28 @@ recv_bb=zeros(1,cfg.symbollen); %received baseband
 
 for u=1:cfg.users
     recv_bb=recv_bb+sim_channel(cfg,bb(u,:),doppler(u),delay(u,:),gain(u,:));
-    plot(real(recv_bb));
-    hold on
+%     plot(real(recv_bb));
+%     hold on
 end
 
 %%  --decode part
+figure
 
-cfr_all=fftshift(fft(recv_bb(cfg.gilen+1:end)));
 plot(abs(cfr_all))
-
+legend('receive')
+% hold on
+% plot(real(cfr_all))
+% hold on 
+% plot(imag(cfr_all))
+% hold on
 
 cir=zeros(cfg.users,cfg.fftlen);
+figure
 % get CIR for each user
 for u=1:cfg.users
     cir(u,:)=ifft( fftshift(cfr_all.*conj(cfg.userltf(u,:)))); %convolution
     plot(abs(cir(u,:)));
     hold on
+%     plot(abs(fft(cir(2,:))))
+%     hold on
 end
