@@ -71,10 +71,11 @@ void transmit_worker(std::vector<std::complex<float>> buff,
 
     // send data until the signal handler gets called
     while (not stop_signal_called) {
-        // if (++cnt == 2000) {
-        //     cnt = 0;
-        //     index--;
-        // }
+        // // // 调整斜率
+        if (++cnt == 15) {
+            cnt = 0;
+            index++;
+        }
         // fill the buffer with the waveform
         for (size_t n = 0; n < buff.size(); n++) {
             // buff[n] = wave_table();

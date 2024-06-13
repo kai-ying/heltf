@@ -69,70 +69,72 @@ std::string generate_out_filename(
  * A function to be used as a boost::thread_group thread for Server Socket 
  **********************************************************************/
 void server_work(size_t &index) {
-    // 创建 Socket
-    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == -1) {
-        std::cerr << "Error: Could not create socket\n";
+    // 创建 socket
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd == -1) {
+        std::cerr << "Failed to create socket\n";
         // return 1;
     }
 
-    // 绑定地址和端口
-    struct sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(8080); // 端口号
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-
-    if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1) {
-        std::cerr << "Error: Binding failed\n";
-        close(serverSocket);
+    // 绑定 IP 地址和端口
+    sockaddr_in address;
+    int addrlen = sizeof(address);
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(8080); // 端口号 8080
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) == -1) {
+        std::cerr << "Bind failed\n";
         // return 1;
     }
 
     // 监听连接
-    if (listen(serverSocket, 5) == -1) {
-        std::cerr << "Error: Listening failed\n";
-        close(serverSocket);
+    if (listen(server_fd, 2) == -1) {
+        std::cerr << "Listen failed\n";
         // return 1;
     }
 
-    std::cout << "Server waiting for incoming connection...\n";
-
-    // 接受客户端连接
-    struct sockaddr_in clientAddr;
-    socklen_t clientAddrSize = sizeof(clientAddr);
-    int clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrSize);
-    if (clientSocket == -1) {
-        std::cerr << "Error: Accepting client failed\n";
-        close(serverSocket);
+    // 接受第一个客户端连接
+    int client_socket1 = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+    if (client_socket1 == -1) {
+        std::cerr << "Accept failed for client 1\n";
         // return 1;
     }
+    std::cout << "Client 1 connected\n";
 
-    std::cout << "Client connected\n";
+    // // 接受第二个客户端连接
+    // int client_socket2 = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+    // if (client_socket2 == -1) {
+    //     std::cerr << "Accept failed for client 2\n";
+    //     // return 1;
+    // }
+    std::cout << "Client 2 connected\n";
 
     // 循环接收客户端发送的整数数据
     while (not stop_signal_called) {
         int receivedData;
-        if (recv(clientSocket, &receivedData, sizeof(receivedData), 0) == -1) {
+        if (recv(client_socket1, &receivedData, sizeof(receivedData), 0) == -1) {
             std::cerr << "Error: Receiving data failed\n";
-            close(clientSocket);
-            close(serverSocket);
+
             // return 1;
         }
 
         std::cout << "Received data from client: " << receivedData << std::endl;
-        if (abs(receivedData + 256) < 50 && receivedData != 0) {
+        if (abs(receivedData + 0) <= 5) { // + 256
             // boost::lock_guard<boost::mutex> lock(indexMutex); // 在访问 index 之前加锁
             // ADD SOCKET Message to Client
             const char* message = "OK!";
-            send(clientSocket, message, strlen(message), 0);
+
+            send(client_socket1, message, strlen(message), 0);
+            // send(client_socket2, message, strlen(message), 0);
+
             std::cout << "Synchronization has done!" << std::endl;
             //////////////////////////////////////////////////////////////
             // LKY DO IT: receive change CP message
             char CP_buffer[2]; // 设置接收缓冲区
             memset(CP_buffer, 0, sizeof(CP_buffer)); // 初始化缓冲区
-            if (recv(clientSocket, CP_buffer, sizeof(CP_buffer), 0) == -1) {
+            if (recv(client_socket1, CP_buffer, sizeof(CP_buffer), 0) == -1) {
                 std::cerr << "Error: Receiving data failed\n";
-                close(clientSocket);
+                close(client_socket1);
                 // return 1;
             }
             if (strcmp(CP_buffer, "CP") == 0) {
@@ -146,7 +148,7 @@ void server_work(size_t &index) {
             // // 通过锁定互斥量来修改共享数据
             // std::cout << "Initial index: " << index << std::endl;
             boost::lock_guard<boost::mutex> lock(indexMutex); // 在访问 index 之前加锁
-            index -= receivedData+256;
+            index -= receivedData;
             // std::cout << "Index After compensation: " << index << std::endl;
 
             // Sleeping for 0.1 second
@@ -155,8 +157,7 @@ void server_work(size_t &index) {
     }
 
     // 关闭连接
-    close(clientSocket);
-    close(serverSocket);
+    close(server_fd);
 }
 
 /***********************************************************************
@@ -186,7 +187,7 @@ void transmit_worker(std::vector<std::complex<float>> buff,
         // Tx_wavefrom index
         // std::cout << "TX_wavefrom index" << index <<std::endl;
         // boost::lock_guard<boost::mutex> lock(indexMutex); // 在访问 index 之前加锁
-        if (++cnt == 60) {
+        if (++cnt == 14) { // best: 14
             cnt = 0;
             index++;
         }

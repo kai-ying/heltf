@@ -31,6 +31,9 @@ set(example_sources
     mytest.cpp
     TxNoCPTest.cpp
     Tx_full_sub.cpp
+    TxEvenSub_withCP.cpp
+    TxRxNoCPTest.cpp
+    TxNoCPTest_2Rx.cpp
 )
 
 if(ENABLE_RFNOC)

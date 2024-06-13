@@ -67,7 +67,6 @@ std::string generate_out_filename(
     return base_fn_fp.string();
 }
 
-<<<<<<< HEAD
 /***********************************************************************
  * server_worker function
  * A function to be used as a boost::thread_group thread for Server Socket 
@@ -223,9 +222,6 @@ void transmitCP_worker(std::vector<std::complex<float>> CPbuff,
     tx_streamer->send("", 0, metadata);
 }
 
-=======
-std::vector<std::complex<float>> tx_bb;
->>>>>>> db0a79b7223892f6974b3c4ce4f6c9373df2501b
 
 /***********************************************************************
  * transmit_worker function
@@ -267,19 +263,11 @@ void transmit_worker(std::vector<std::complex<float>> buff,
         }
         // fill the buffer with the waveform
         for (size_t n = 0; n < buff.size(); n++) {
-<<<<<<< HEAD
             // buff[n] = wave_table();
             // if (not restart_transmit) {
             //     if (index % 2048 == 0) index += 256;
             // }
             buff[n] = wave_table(index += step);
-=======
-
-            // index = (index + step) % wave_table_len;
-            // buff[n] = wave_table(index);
-            buff[n] = wave_table();
-            // if (tx_bb.size() < 2304) tx_bb.push_back(buff[n]);
->>>>>>> db0a79b7223892f6974b3c4ce4f6c9373df2501b
             // std::cout << buff[n] << std::endl;
             // std::cout << index << std:: endl;
         }        
@@ -401,7 +389,6 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
             throw std::runtime_error(
                 str(boost::format("Receiver error %s") % md.strerror()));
         }
-<<<<<<< HEAD
 
         num_total_samps += num_rx_samps;
 
@@ -409,15 +396,6 @@ void recv_to_file(uhd::usrp::multi_usrp::sptr usrp,
         //     outfiles[i]->write(
         //         (const char*)buff_ptrs[i], num_rx_samps / 100 * sizeof(samp_type));
         // }
-=======
-        num_total_samps += num_rx_samps;
-        // 不降采样 /50
-        for (size_t i = 0; i < outfiles.size(); i++) {
-            outfiles[i]->write(
-                (const char*)buff_ptrs[i], num_rx_samps  * sizeof(samp_type) / 100); // / 100 
-        }
-
->>>>>>> db0a79b7223892f6974b3c4ce4f6c9373df2501b
     }
     
     //recv complex float signal
