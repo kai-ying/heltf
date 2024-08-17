@@ -1,3 +1,5 @@
+My major contribution code is in host/examples
+
 # USRP Hardware Driver (UHD™) Software
 
 Welcome to the UHD™ software distribution! UHD is the free & open-source
